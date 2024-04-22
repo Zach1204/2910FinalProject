@@ -1,6 +1,7 @@
 ﻿@page "/"
 @using BlazorApp1.Data
 @using BlazorApp1.Services
+@using System.Net.Http.Json
 @inject IPokeAPIService APIService
 
 <h3 style="margin-bottom: 20px;">Guess the Pokémon!</h3>
@@ -9,7 +10,7 @@
     <form @onsubmit="Enter">
         <label for="userInput">Type the Pokémon's name:</label>
         <input id="userInput" @bind="@userInput" placeholder="Enter Pokémon name here" />
-        <button type="submit">Submit</button> 
+        <button type="submit">Submit</button>
     </form>
 </div>
 
@@ -72,10 +73,7 @@
     </div>
 </div>
 
-
-
-@code
-{
+@code {
     private Pokemon currentPokemon;
     private string userInput = "";
     private string feedbackMessage = "";
@@ -83,10 +81,26 @@
     private List<Guess> guesses = new List<Guess>();
     private int currentStreak = 0;
     private int bestStreak = 0;
+    private HttpClient httpClient = new HttpClient();
+    private const string FilePath = "best_streak.txt";
 
     protected override async Task OnInitializedAsync()
     {
+        await FetchBestStreakFromFile();
         await FetchRandomPokemon();
+    }
+
+    private async Task FetchBestStreak()
+    {
+        try
+        {
+            var response = await httpClient.GetFromJsonAsync<int>("http://localhost:8000/pokemon/streak/best");
+            bestStreak = response;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex.Message);
+        }
     }
 
     private async Task FetchRandomPokemon()
@@ -99,6 +113,39 @@
         userInput = "";
         feedbackMessage = "";
         feedbackColor = "black";
+    }
+
+    private async Task FetchBestStreakFromFile()
+    {
+        try
+        {
+            if (File.Exists(FilePath))
+            {
+                string content = await File.ReadAllTextAsync(FilePath);
+                if (int.TryParse(content, out int streak))
+                {
+                    bestStreak = streak;
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex.Message);
+        }
+    }
+
+    private async Task UpdateBestStreak()
+    {
+        try
+        {
+            await httpClient.PutAsJsonAsync("http://localhost:8000/pokemon/best-streak/", bestStreak);
+
+            await File.WriteAllTextAsync(FilePath, bestStreak.ToString());
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex.Message);
+        }
     }
 
     private async Task CheckAnswer()
@@ -114,6 +161,7 @@
             if (currentStreak > bestStreak)
             {
                 bestStreak = currentStreak;
+                await UpdateBestStreak();
             }
         }
         else
@@ -135,5 +183,5 @@
     {
         await CheckAnswer();
     }
-
 }
+

@@ -3,7 +3,7 @@ using System.Text.Json;
 using BlazorApp1.Data;
 
 namespace BlazorApp1.Services {
-	public class FileAPIService : IPokeAPIService {
+	public class FileAPIService { 
 		
 		private HttpClient httpClient;
 		protected virtual string BASE_ADDR => "http://localhost:80";
@@ -12,40 +12,31 @@ namespace BlazorApp1.Services {
         public FileAPIService() { 
 			httpClient = new HttpClient();
 		}
-		
-		public async Task<int> GetPokemonCount() {
-			var apiCountResponse = await httpClient.GetFromJsonAsync<JsonElement>($"{BASE_ADDR}/count");
-			return apiCountResponse.GetInt32();
-		}
 
-		public async Task<Pokemon> GetPokemon(int id) {
-			var apiResponse = await httpClient.GetFromJsonAsync<JsonElement>($"{BASE_ADDR}/pokemon/{id}");
 
-			return new Pokemon {
-				Id = id,
-				Name = apiResponse.GetProperty("name").GetString(),
-			};
-		}
+        public class StreakService
+        {
+            private const string FilePath = "best_streak.txt";
 
-		public async Task PostPokemon(Pokemon pokemon)
-		{
-			try
-			{
-				string json = '{' + $"\"id\":\"{pokemon.Id}\",\n" +
-									$"\"name\":\"{pokemon.Name}\",\n" + '}';
+            public int GetBestStreak()
+            {
+                if (File.Exists(FilePath))
+                {
+                    string content = File.ReadAllText(FilePath);
+                    if (int.TryParse(content, out int bestStreak))
+                    {
+                        return bestStreak;
+                    }
+                }
 
-				StringContent JsonContent = new StringContent(json, Encoding.UTF8, "application/json");
+                return 0;
+            }
 
-				await httpClient.PostAsync($"{BASE_ADDR}/pokemon", JsonContent);
-			}
-			catch (HttpRequestException ex)
-			{
-				Console.WriteLine("Failed to post the Pokemon. The Pokemon may already exist. \n" + ex.Message);
-			}
-		}
-
-		public async Task DeletePokemon(int id) {
-			await httpClient.DeleteAsync($"{BASE_ADDR}/pokemon/{id}");
-		}
-	}
+            public void UpdateBestStreak(int newBestStreak)
+            {
+                File.WriteAllText(FilePath, newBestStreak.ToString());
+            }
+        }
+    }
 }
+
