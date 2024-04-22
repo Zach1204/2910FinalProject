@@ -13,6 +13,7 @@
     </td>
 	<td>
 		<div>
+            <!-- Only Here for Testing Purposes-->
             @pokemon
 
         </div>
@@ -23,11 +24,7 @@
             {
                 var formattedTypes = string.Join(", ", pokemon.Types.Select(t => char.ToUpper(t.Name[0]) + t.Name.Substring(1)));
 
-                <span>@formattedTypes</span> <!-- Display the formatted types -->
-            }
-            else
-            {
-                <span>No types available</span> <!-- In case there are no types -->
+                <span>@formattedTypes</span> 
             }
         </div>
 	</td>

@@ -3,59 +3,86 @@
 @using BlazorApp1.Services
 @inject IPokeAPIService APIService
 
-<h3>Guess the Pokémon!</h3>
+<h3 style="margin-bottom: 20px;">Guess the Pokémon!</h3>
 
-<div>
-    <label for="userInput">Type the Pokémon's name:</label>
-    <input id="userInput" @bind="@userInput" placeholder="Enter Pokémon name here" />
-    <button @onclick="CheckAnswer">Submit</button>
+<div class="input-group mb-3">
+    <form @onsubmit="Enter">
+        <label for="userInput">Type the Pokémon's name:</label>
+        <input id="userInput" @bind="@userInput" placeholder="Enter Pokémon name here" />
+        <button type="submit">Submit</button> 
+    </form>
 </div>
 
 @if (!string.IsNullOrEmpty(feedbackMessage))
 {
-    <div style="color: @feedbackColor;">
+    <div class="alert" style="background-color: @feedbackColor; color: white; border-radius: 10px; margin-bottom: 20px;">
         @feedbackMessage
     </div>
 }
 
 @if (currentPokemon != null)
 {
-    <table class="table table-striped">
-        <thead>
-            <tr>
-                <th class="col-1">Id</th>
-                <th class="col-1">First Letter</th>
-                <th class="col-6">Name</th>
-                <th class="col-10">Types</th>
-            </tr>
-        </thead>
-        <tbody>
-            <PokemonTableRow pokemon="@currentPokemon" />
-        </tbody>
-    </table>
+    <div class="card mb-3">
+        <div class="card-body">
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th class="col-1">Id</th>
+                        <th class="col-1">First Letter</th>
+                        <th class="col-6">Name</th>
+                        <th class="col-4">Types</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <PokemonTableRow pokemon="@currentPokemon" />
+                </tbody>
+            </table>
+        </div>
+    </div>
 }
 
 <h4>Guesses</h4>
-<ul>
+<ul class="list-group mb-3">
     @foreach (Guess guess in guesses)
     {
-        <li style="color: @(guess.IsCorrect ? "black" : "red")">
+        <li class="list-group-item" style="color: @(guess.IsCorrect ? "black" : "red")">
             @(char.ToUpper(guess.Pokemon.Name[0]) + guess.Pokemon.Name.Substring(1).ToLower())
             @if (!guess.IsCorrect)
             {
-                <span> (Your answer: @guess.UserGuess)</span>
+                <span style="font-style: italic;">(Your answer: @guess.UserGuess)</span>
             }
         </li>
     }
 </ul>
 
+<div class="row">
+    <div class="col-md-6">
+        <div class="card" style="background-color: #4CAF50; color: white; border-radius: 10px;">
+            <div class="card-body">
+                <strong>Current Streak:</strong> @currentStreak
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card" style="background-color: #2196F3; color: white; border-radius: 10px;">
+            <div class="card-body">
+                <strong>Best Streak:</strong> @bestStreak
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
 @code
 {
-    private Pokemon currentPokemon; 
-    private string userInput = ""; 
-    private string feedbackMessage = ""; 
-    private string feedbackColor = "black"; 
-    private List<Guess> guesses = new List<Guess>(); 
+    private Pokemon currentPokemon;
+    private string userInput = "";
+    private string feedbackMessage = "";
+    private string feedbackColor = "black";
+    private List<Guess> guesses = new List<Guess>();
+    private int currentStreak = 0;
+    private int bestStreak = 0;
 
     protected override async Task OnInitializedAsync()
     {
@@ -81,6 +108,19 @@
 
         bool isCorrect = normalizedUserInput == normalizedPokemonName;
 
+        if (isCorrect)
+        {
+            currentStreak++;
+            if (currentStreak > bestStreak)
+            {
+                bestStreak = currentStreak;
+            }
+        }
+        else
+        {
+            currentStreak = 0;
+        }
+
         guesses.Add(new Guess
             {
                 Pokemon = currentPokemon,
@@ -88,7 +128,12 @@
                 IsCorrect = isCorrect
             });
 
-
         await FetchRandomPokemon();
     }
+
+    private async Task Enter()
+    {
+        await CheckAnswer();
+    }
+
 }
